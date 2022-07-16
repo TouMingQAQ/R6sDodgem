@@ -15,20 +15,33 @@ namespace R6s
         static List<User> R6User = new List<User>();
         static List<User> user_1 = new List<User>();
         static List<User> user_2 = new List<User>();
+        static bool isHead = false;
         static void Main(string[] args)
         {
             while (true)
             {
+                Console.Clear();
                 Console.WriteLine("第一次使用，请在程序根目录下JSON/user.json里修改需要排列的队员。");
                 Console.WriteLine("如有修改，可以在修改user.json后重新加载排列队员即可");
+                Console.WriteLine("车头模式下，user.json的第一队员是A队车头，第二队员是B队车头");
+                Console.WriteLine("每次切换模式后，请重新加载排列队员");
                 Console.WriteLine("作者：TouMing");
                 Menu();
 
                 switch (Console.ReadLine())
                 {
                     case "1":
-                        Start();
-                        Sort();
+                        try
+                        {
+                            Start();
+                            
+                            Sort();
+                            
+                        }catch(Exception e)
+                        {
+                            Console.WriteLine("未知错误");
+                            Console.WriteLine(e);
+                        }
                         Console.Clear();
                         break;
                     case "2":
@@ -56,52 +69,128 @@ namespace R6s
                         else
                         {
                             Console.WriteLine("队员数量错误");
-                            Thread.Sleep(1000 * 5);
+                            Thread.Sleep(1000 * 2);
                         }
                         Console.Clear();
                         break;
                     case "3":
                         Console.Write("输入游戏ID：");
+                        try
+                        {
+                            Console.WriteLine("你的休闲分数：" + CodeGET(Console.ReadLine()));
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("ID错误，不存在的ID或者格式错误");
+                            Console.WriteLine("也有可能网络错误，请检查下网络状况");
 
-                        Console.WriteLine("你的休闲分数：" + CodeGET(Console.ReadLine()));
+                        }
                         Console.WriteLine("输入任意键继续....");
                         Console.ReadKey();
+                        //Console.Clear();
                         break;
                     case "4":
+                        R6User.Clear();
+                        user_1.Clear();
+                        user_2.Clear();
+                        JObject json = JsonFileRead(userPath);
+                        int num = json["num"].Value<int>();
+                        for (int i = 0; i < num; i++)
+                        {
+                            string userName = json["date"][i]["user"].Value<string>();
+                            int code = json["date"][i]["scores"].Value<int>();
+                            
+                            Console.WriteLine($"{userName}:{code}");
+                            User user = new User();
+                            user.Name = userName;
+                            user.Code = code;
+                            R6User.Add(user);                           
+                        }
+                        Sort();
+                        ListPrint();
+                        Console.WriteLine("输入任意键退出");
+                        Console.ReadKey();
+                        //Console.Clear();
+                        break;
+                    case "5":
+                        //切换模式
+                        if (isHead)
+                            isHead = false;
+                        else
+                            isHead = true;
+                        //Console.Clear();
+                        break;
+                    case "6":
+                        //选择车头
+                        Console.Clear();   
+                        try
+                        {
+                            ListPrint();
+                            Console.WriteLine("输入A队车头序号");
+                            int index_1 = Convert.ToInt32(Console.ReadLine());
+                            Console.WriteLine("输入B队车头序号");
+                            int index_2 = Convert.ToInt32(Console.ReadLine());
+                            var u = user_1[0];
+                            user_1[0] = user_1[index_1 - 1];
+                            user_1[index_1 - 1] = u;
+                            u = user_2[0];
+                            user_2[0] = user_2[index_2 - 1];
+                            user_2[index_2 - 1] = u;
+                        }
+                        catch(Exception e)
+                        {
+                            Console.WriteLine("参数错误");
+                        }
+                        Console.WriteLine("输入任意键退出");
+                        Console.ReadKey();
+                        
+                        break;
+                    case "0":
                         return;
                     default:
                         Console.WriteLine("参数错误，请重新输入");
                         Thread.Sleep(1000 * 3);
-                        Console.Clear();
+                        //Console.Clear();
                         break;
                 }
             }
         }
         static void Menu()
         {
-            Console.WriteLine("—————————————");
-            Console.WriteLine("|\t1、加载队员\t|");
-            Console.WriteLine("|\t2、排列队员\t|");
-            Console.WriteLine("|\t3、查询分数\t|");
-            Console.WriteLine("|\t4、退出  \t|");
-            Console.WriteLine("—————————————");
+            
+            Console.WriteLine("—————————————————————");
+            Console.WriteLine("|\t1、加载队员\t\t\t|");
+            Console.WriteLine("|\t2、排列队员\t\t\t|");
+            Console.WriteLine("|\t3、查询分数\t\t\t|");
+            Console.WriteLine("|\t4、直接排列\t\t\t|");
+            Console.WriteLine("|\t5、切换模式\t\t\t|");
+            Console.WriteLine("|\t6、选择车头(有问题，不推荐使用) |");
+            Console.WriteLine("|\t0、退出  \t\t\t|");
+            Console.WriteLine("—————————————————————");
+            if (isHead)
+                Console.WriteLine("当前模式:车头模式");
+            else
+                Console.WriteLine("当前模式:一般模式");
+            
             if (user_1.Count >= 5 && user_2.Count >= 5)
+            {
                 ListPrint();
-            int num = 0;
-            foreach (var n in user_1)
-            {
-                num += n.Code;
+                int num = 0;
+                foreach (var n in user_1)
+                {
+                    num += n.Code;
+                }
+                Console.Write($"|\t\tA队和：{num}\t\t|");
+                num = 0;
+                foreach (var n in user_2)
+                {
+                    num += n.Code;
 
+                }
+                Console.Write($"\t\tB队和：{num}\t\t|");
+                Console.WriteLine();
             }
-            Console.Write($"|\t\tA队和：{num}\t\t|");
-            num = 0;
-            foreach (var n in user_2)
-            {
-                num += n.Code;
-
-            }
-            Console.Write($"\t\tB队和：{num}\t\t|");
-            Console.WriteLine();
+           
         }
         static Users SortUser(List<User> user_1, List<User> user_2)
         {
@@ -129,9 +218,12 @@ namespace R6s
                 num = (add_1 - add_2) / 2;
             }
             List<Vule> vules = new List<Vule>();
-            for (int i = 0; i < user_1.Count; i++)
+            int num_Head = 0;
+            if (isHead)
+                num_Head = 1;
+            for (int i = num_Head; i < user_1.Count; i++)
             {
-                for (int j = 0; j < user_2.Count; j++)
+                for (int j = num_Head; j < user_2.Count; j++)
                 {
                     Vule vule = new Vule();
                     vule.Num_Left = i;
@@ -172,6 +264,9 @@ namespace R6s
         }
         static void Start()
         {
+            user_1.Clear();
+            user_2.Clear();
+            R6User.Clear();
             JObject json = JsonFileRead(userPath);
             int num = json["num"].Value<int>();
             for (int i = 0; i < num; i++)
@@ -197,15 +292,18 @@ namespace R6s
         }
         static void Sort()
         {
-            for (int i = 0; i < R6User.Count - 1; i++)
+            if (!isHead)
             {
-                for (int j = i + 1; j < R6User.Count; j++)
+                for (int i = 0; i < R6User.Count - 1; i++)
                 {
-                    if (R6User[i].Code < R6User[j].Code)
+                    for (int j = i + 1; j < R6User.Count; j++)
                     {
-                        User user = R6User[i];
-                        R6User[i] = R6User[j];
-                        R6User[j] = user;
+                        if (R6User[i].Code < R6User[j].Code)
+                        {
+                            User user = R6User[i];
+                            R6User[i] = R6User[j];
+                            R6User[j] = user;
+                        }
                     }
                 }
             }
@@ -219,11 +317,23 @@ namespace R6s
         }
         static void ListPrint()
         {
+            Console.WriteLine("——————————————————————————————————————————");
             Console.WriteLine($"|\t\tA队\t\t\t|\t\tB队\t\t\t|");
             for (int i = 0; i < 5; i++)
             {
-                Console.WriteLine($"|\t\t{user_1[i].Name}:{user_1[i].Code}\t\t|\t\t{user_2[i].Name}:{user_2[i].Code}\t\t|");
+                if (user_1[i].Name.Length <= 7)
+                    Console.Write($"|\t\t{i + 1}:{user_1[i].Name}:{user_1[i].Code}\t\t|");
+                else
+                    Console.Write($"|\t\t{i + 1}:{user_1[i].Name}:{user_1[i].Code}\t|");
+
+                if (user_2[i].Name.Length <=7)
+                    Console.Write($"\t\t{ i + 1}:{ user_2[i].Name}:{ user_2[i].Code}\t\t|\n");
+                else
+                    Console.Write($"\t\t{i + 1}:{user_2[i].Name}:{user_2[i].Code}\t|\n");
+
             }
+            Console.WriteLine("——————————————————————————————————————————");
+
 
         }
         //static void 
